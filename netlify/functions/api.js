@@ -44,7 +44,7 @@ function auth(req, res, next) {
   }
 }
 
-app.post('/api/rsvp', async (req, res) => {
+app.post('/rsvp', async (req, res) => {
   try {
     await connectDB()
     const { name, attending, message, inviteId } = req.body
@@ -58,7 +58,7 @@ app.post('/api/rsvp', async (req, res) => {
   }
 })
 
-app.get('/api/rsvp', auth, async (req, res) => {
+app.get('/rsvp', auth, async (req, res) => {
   try {
     await connectDB()
     const { inviteId } = req.query
@@ -70,7 +70,7 @@ app.get('/api/rsvp', auth, async (req, res) => {
   }
 })
 
-app.post('/api/login', (req, res) => {
+app.post('/login', (req, res) => {
   const { username, password } = req.body
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' })
