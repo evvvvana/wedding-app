@@ -1,13 +1,5 @@
-import express from 'express'
-import cors from 'cors'
 import mongoose from 'mongoose'
-import serverless from 'serverless-http'
 import jwt from 'jsonwebtoken'
-
-const app = express()
-
-app.use(cors())
-app.use(express.json())
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://hibasakhri4_db_user:Wbwsw6Mld9nkPvAS@cluster0.lml0cwu.mongodb.net/wedding'
 const JWT_SECRET = process.env.JWT_SECRET || 'wedding-invitation-secret-key-2026'
@@ -30,53 +22,90 @@ const guestSchema = new mongoose.Schema({
 
 const Guest = mongoose.models.Guest || mongoose.model('Guest', guestSchema)
 
-function auth(req, res, next) {
-  const header = req.headers.authorization
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Unauthorized' })
+function getPath(event) {
+  const p = event.path || ''
+  const prefix = '/.netlify/functions/api'
+  if (p.startsWith(prefix)) {
+    return p.slice(prefix.length) || '/'
   }
+  return p
+}
+
+function getBody(event) {
+  if (!event.body) return {}
   try {
-    const token = header.split(' ')[1]
-    jwt.verify(token, JWT_SECRET)
-    next()
+    return JSON.parse(event.isBase64Encoded
+      ? Buffer.from(event.body, 'base64').toString()
+      : event.body)
   } catch {
-    res.status(401).json({ message: 'Invalid token' })
+    return {}
   }
 }
 
-app.post('/rsvp', async (req, res) => {
+function jsonResponse(status, data) {
+  return {
+    statusCode: status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    },
+    body: JSON.stringify(data),
+  }
+}
+
+export async function handler(event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return jsonResponse(200, {})
+  }
+
+  const path = getPath(event)
+  const method = event.httpMethod
+
   try {
-    await connectDB()
-    const { name, attending, message, inviteId } = req.body
-    if (!name || attending === undefined) {
-      return res.status(400).json({ message: 'Name and attendance are required' })
+    // POST /login
+    if (path === '/login' && method === 'POST') {
+      const { username, password } = getBody(event)
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' })
+        return jsonResponse(200, { token })
+      }
+      return jsonResponse(401, { message: 'Invalid credentials' })
     }
-    const guest = await Guest.create({ name, attending, message, inviteId })
-    res.status(201).json({ message: 'RSVP submitted successfully', guest })
+
+    // POST /rsvp
+    if (path === '/rsvp' && method === 'POST') {
+      await connectDB()
+      const { name, attending, message, inviteId } = getBody(event)
+      if (!name || attending === undefined) {
+        return jsonResponse(400, { message: 'Name and attendance are required' })
+      }
+      const guest = await Guest.create({ name, attending, message, inviteId })
+      return jsonResponse(201, { message: 'RSVP submitted successfully', guest })
+    }
+
+    // GET /rsvp
+    if (path === '/rsvp' && method === 'GET') {
+      const header = event.headers?.authorization || ''
+      if (!header.startsWith('Bearer ')) {
+        return jsonResponse(401, { message: 'Unauthorized' })
+      }
+      try {
+        jwt.verify(header.split(' ')[1], JWT_SECRET)
+      } catch {
+        return jsonResponse(401, { message: 'Invalid token' })
+      }
+
+      await connectDB()
+      const params = event.queryStringParameters || {}
+      const filter = params.inviteId ? { inviteId: params.inviteId } : {}
+      const guests = await Guest.find(filter).sort({ createdAt: -1 })
+      return jsonResponse(200, guests)
+    }
+
+    return jsonResponse(404, { message: 'Not found' })
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message })
+    return jsonResponse(500, { message: 'Server error', error: error.message })
   }
-})
-
-app.get('/rsvp', auth, async (req, res) => {
-  try {
-    await connectDB()
-    const { inviteId } = req.query
-    const filter = inviteId ? { inviteId } : {}
-    const guests = await Guest.find(filter).sort({ createdAt: -1 })
-    res.json(guests)
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message })
-  }
-})
-
-app.post('/login', (req, res) => {
-  const { username, password } = req.body
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' })
-    return res.json({ token })
-  }
-  res.status(401).json({ message: 'Invalid credentials' })
-})
-
-export const handler = serverless(app)
+}
