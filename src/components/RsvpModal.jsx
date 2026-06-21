@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api'
+const API_BASE = import.meta.env.VITE_API_URL || '/.netlify/functions/api'
 
 export default function RsvpModal({ inviteId, onClose, onSubmit }) {
   const [name, setName] = useState('')
