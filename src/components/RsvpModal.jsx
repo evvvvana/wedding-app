@@ -1,18 +1,16 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/.netlify/functions/api'
-
 export default function RsvpModal({ inviteId, onClose, onSubmit }) {
   const [name, setName] = useState('')
-  const [attending, setAttending] = useState(null)
+  const [attendance, setAttendance] = useState('')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name.trim() || attending === null) {
+    if (!name.trim() || !attendance) {
       setError('Please fill in your name and select attendance.')
       return
     }
@@ -21,14 +19,13 @@ export default function RsvpModal({ inviteId, onClose, onSubmit }) {
     setError('')
 
     try {
-      const res = await fetch(`${API_BASE}/rsvp`, {
+      const res = await fetch('/.netlify/functions/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
-          attending,
+          attendance,
           message: message.trim(),
-          inviteId,
         }),
       })
 
@@ -100,9 +97,9 @@ export default function RsvpModal({ inviteId, onClose, onSubmit }) {
             <div className="flex gap-3">
               <motion.button
                 type="button"
-                onClick={() => setAttending(true)}
+                onClick={() => setAttendance('yes')}
                 className={`flex-1 py-3 rounded-xl font-medium text-sm border-2 transition-all cursor-pointer
-                  ${attending === true
+                  ${attendance === 'yes'
                     ? 'bg-green-50 border-green-400 text-green-700'
                     : 'border-gray-200 text-charcoal/60 hover:border-gray-300'
                   }`}
@@ -113,9 +110,9 @@ export default function RsvpModal({ inviteId, onClose, onSubmit }) {
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => setAttending(false)}
+                onClick={() => setAttendance('no')}
                 className={`flex-1 py-3 rounded-xl font-medium text-sm border-2 transition-all cursor-pointer
-                  ${attending === false
+                  ${attendance === 'no'
                     ? 'bg-red-50 border-red-400 text-red-700'
                     : 'border-gray-200 text-charcoal/60 hover:border-gray-300'
                   }`}

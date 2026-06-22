@@ -55,8 +55,8 @@ export default function AdminDashboard() {
     navigate('/admin')
   }
 
-  const attending = guests.filter((g) => g.attending).length
-  const notAttending = guests.filter((g) => !g.attending).length
+  const attending = guests.filter((g) => g.attendance === 'yes').length
+  const notAttending = guests.filter((g) => g.attendance === 'no').length
 
   if (loading) {
     return (
@@ -180,13 +180,13 @@ export default function AdminDashboard() {
                         <td className="px-6 py-4">
                           <span
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
-                              ${guest.attending
+                              ${guest.attendance === 'yes'
                                 ? 'bg-green-50 text-green-700'
                                 : 'bg-red-50 text-red-600'
                               }`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${guest.attending ? 'bg-green-500' : 'bg-red-400'}`} />
-                            {guest.attending ? 'Attending' : 'Not Attending'}
+                            <span className={`w-1.5 h-1.5 rounded-full ${guest.attendance === 'yes' ? 'bg-green-500' : 'bg-red-400'}`} />
+                            {guest.attendance === 'yes' ? 'Attending' : 'Not Attending'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-charcoal/50 hidden md:table-cell max-w-xs truncate">
