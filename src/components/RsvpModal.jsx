@@ -29,9 +29,11 @@ export default function RsvpModal({ inviteId, onClose, onSubmit }) {
         }),
       })
 
+      const text = await res.text()
+      console.log("RAW RESPONSE:", text)
+
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.message || 'Failed to submit')
+        throw new Error(text || 'Failed to submit')
       }
 
       onSubmit(name.trim())
