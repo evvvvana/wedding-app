@@ -4,9 +4,14 @@ import jwt from 'jsonwebtoken'
 let cached = global.mongoose
 if (!cached) cached = global.mongoose = { conn: null }
 
+const URI = process.env.MONGODB_URI || 'mongodb+srv://hibasakhri4_db_user:Wbwsw6Mld9nkPvAS@cluster0.lml0cwu.mongodb.net/wedding'
+const JWT_SECRET = process.env.JWT_SECRET || 'wedding-invitation-secret-key-2026'
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'wedding2026'
+
 const connectDB = async () => {
   if (cached.conn) return cached.conn
-  cached.conn = await mongoose.connect(process.env.MONGODB_URI)
+  cached.conn = await mongoose.connect(URI)
   return cached.conn
 }
 
@@ -56,8 +61,8 @@ export async function handler(event) {
   try {
     if (path === '/login' && method === 'POST') {
       const { username, password } = getBody(event)
-      if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-        const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '24h' })
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h' })
         return jsonResponse(200, { token })
       }
       return jsonResponse(401, { message: 'Invalid credentials' })
@@ -66,7 +71,7 @@ export async function handler(event) {
     if (path === '/rsvp' && method === 'GET') {
       const header = event.headers?.authorization || ''
       if (!header.startsWith('Bearer ')) return jsonResponse(401, { message: 'Unauthorized' })
-      try { jwt.verify(header.split(' ')[1], process.env.JWT_SECRET) }
+      try { jwt.verify(header.split(' ')[1], JWT_SECRET) }
       catch { return jsonResponse(401, { message: 'Invalid token' }) }
 
       await connectDB()

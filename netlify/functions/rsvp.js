@@ -9,7 +9,8 @@ if (!cached) {
 const connectDB = async () => {
   if (cached.conn) return cached.conn;
 
-  cached.conn = await mongoose.connect(process.env.MONGODB_URI);
+  const uri = process.env.MONGODB_URI || 'mongodb+srv://hibasakhri4_db_user:Wbwsw6Mld9nkPvAS@cluster0.lml0cwu.mongodb.net/wedding';
+  cached.conn = await mongoose.connect(uri);
   return cached.conn;
 };
 
